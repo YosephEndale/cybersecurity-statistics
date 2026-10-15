@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Statistics coursework examining the cryptographic steps from a wallet mnemonic to an Ethereum address.">
+  <title>02 — Ethereum wallet cryptography | Cybersecurity Statistics</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="assignmentPage walletPage">
+<header class="siteRail" aria-label="Course navigation">
+  <a href="index.html" class="railIdentity" aria-label="Cybersecurity Statistics home">
+    <span class="railMark">S<span class="markSlash">/</span>C</span>
+    <span class="railName">CYBERSECURITY<br>STATISTICS</span>
+  </a>
+  <div class="railDivider"></div>
+  <div class="railEyebrow">MSc CYBERSECURITY<br>STATISTICS COURSE</div>
+  <nav class="railNav" aria-label="Site navigation">
+    <a href="index.html"><span class="railNum">00</span> Overview</a>
+    <a href="homework1.html"><span class="railNum">01</span> Homework 1</a>
+    <a class="isCurrent" href="homework2.html"><span class="railNum">02</span> Homework 2</a>
+  </nav>
+  <div class="railFoot"><span class="railDot" aria-hidden="true"></span> COURSEWORK / 2026<br>EXERCISE NO. 02</div>
+</header>
+
+<main class="wrap" id="top">
+  <div class="documentHeader"><span>COURSEWORK / 02</span><span>WALLETS · KEY DERIVATION · STATISTICS</span></div>
+  <section class="walletIntro" aria-labelledby="walletTitle">
+    <p class="overline">Homework 2 / Cryptographic primitives</p>
+    <h1 id="walletTitle">From a wallet seed <em>to an</em> Ethereum address<span class="period">.</span></h1>
+    <p class="lead">This assignment examines the standards involved in generating an Ethereum wallet address, the role of each cryptographic operation, and the statistical properties we can meaningfully study.</p>
+    <p class="walletContext">The discussion concerns conventional Ethereum externally owned accounts (EOAs) derived from a BIP-39 mnemonic. Not every Ethereum wallet uses exactly the same recovery or derivation method.</p>
+  </section>
+
+  <section class="section" id="pipeline" aria-labelledby="pipelineTitle">
+    <div class="sectionhead"><div><span class="tag">01 / Process</span><h2 id="pipelineTitle">The wallet derivation pipeline</h2><p class="sub">The steps below have different roles. They should not be treated as one algorithm.</p></div></div>
+    <ol class="walletFlow">
+      <li><span class="flowStage">01</span><div><strong>Random entropy → Mnemonic</strong><p>BIP-39 represents randomly generated secret entropy as a sequence of recovery words with checksum information.</p></div></li>
+      <li><span class="flowStage">02</span><div><strong>Mnemonic → Seed</strong><p>BIP-39 applies PBKDF2-HMAC-SHA512 (2,048 iterations) to produce a 512-bit seed. An optional passphrase changes the result.</p></div></li>
+      <li><span class="flowStage">03</span><div><strong>Seed → Derived private key</strong><p>BIP-32 derives a master key and child keys; BIP-44 defines a conventional path for choosing an account and address.</p></div></li>
+      <li><span class="flowStage">04</span><div><strong>Private key → Public key</strong><p>secp256k1 elliptic-curve multiplication computes the public point Q = kG, which is also used with ECDSA digital signatures.</p></div></li>
+      <li><span class="flowStage">05</span><div><strong>Public key → Ethereum address</strong><p>Keccak-256 hashes the 64-byte public-key coordinates (x || y, without the 0x04 prefix). The last 20 bytes form the address.</p></div></li>
+      <li><span class="flowStage">06</span><div><strong>Address → Checksummed address</strong><p>EIP-55 uses a Keccak-derived capitalization pattern for the hexadecimal address to help detect typing mistakes.</p></div></li>
+    </ol>
+  </section>
+
+  <section class="section" id="standards" aria-labelledby="standardsTitle">
+    <div class="sectionhead"><div><span class="tag">02 / Standards</span><h2 id="standardsTitle">What each component contributes</h2></div></div>
+    <div class="tableWrap"><table class="walletTable">
+      <thead><tr><th scope="col">Standard / primitive</th><th scope="col">Purpose</th><th scope="col">Category</th></tr></thead>
+      <tbody>
+        <tr><td>BIP-39</td><td>Encodes entropy as recovery words and derives a seed from the mnemonic.</td><td>Backup &amp; seed derivation</td></tr>
+        <tr><td>BIP-32</td><td>Derives a hierarchy of private/public keys using chain codes and HMAC-SHA512.</td><td>Hierarchical key derivation</td></tr>
+        <tr><td>BIP-44</td><td>Defines a structured derivation path for coins, accounts and addresses.</td><td>Key organization</td></tr>
+        <tr><td>secp256k1</td><td>Relates a private scalar to a public point; supports Ethereum's conventional ECDSA signatures.</td><td>Public-key cryptography</td></tr>
+        <tr><td>Keccak-256</td><td>Hashes public-key data to derive the 160-bit Ethereum address.</td><td>Hashing</td></tr>
+        <tr><td>EIP-55</td><td>Uses mixed-case hexadecimal letters to detect many address transcription errors.</td><td>Checksum encoding</td></tr>
+      </tbody>
+    </table></div>
+    <div class="walletPath">
+      <div><span class="tag">Common Ethereum derivation path</span><p class="pathText">m/44'/60'/0'/0/0</p></div>
+      <p><b>m</b> = master key; <b>44'</b> = BIP-44 purpose; <b>60'</b> = Ethereum coin type; <b>0'</b> = account; <b>0</b> = external chain; <b>0</b> = address index. The apostrophe indicates hardened derivation. Wallets may choose other paths.</p>
+    </div>
+  </section>
+
+  <section class="section" id="example" aria-labelledby="exampleTitle">
+    <div class="sectionhead"><div><span class="tag">03 / Practical example</span><h2 id="exampleTitle">A reproducible test wallet</h2><p class="sub">A well-known public demonstration mnemonic provides a concrete example without requiring any real wallet information.</p></div></div>
+    <div class="card walletExample">
+      <p class="exampleLabel">PUBLIC TEST MNEMONIC / NEVER USE FOR REAL FUNDS</p>
+      <p class="exampleWords">abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about</p>
+      <div class="tableWrap"><table>
+        <tbody>
+          <tr><th scope="row">BIP-39 passphrase</th><td>(empty)</td></tr>
+          <tr><th scope="row">BIP-39 seed (prefix)</th><td><code>5eb00bbddcf06908…</code> (512 bits in full)</td></tr>
+          <tr><th scope="row">BIP-44 path</th><td><code>m/44'/60'/0'/0/0</code></td></tr>
+          <tr><th scope="row">Ethereum address</th><td><code class="addressCode">0x9858EfFD232B4033E47d90003D41EC34EcaEda94</code></td></tr>
+        </tbody>
+      </table></div>
+      <p class="small">The test address was verified by performing BIP-39 seed derivation, BIP-32 child-key derivation, secp256k1 public-key generation, Keccak-256 hashing and EIP-55 capitalization. It is a public example, not a wallet to deposit funds into.</p>
+    </div>
+    <p class="walletParagraph"><strong>EIP-55 example:</strong> The lowercase address <code class="addressCode">0x9858effd232b4033e47d90003d41ec34ecaeda94</code> and the checksummed address above represent the <em>same 20 bytes</em>. EIP-55 changes the letter case, not the underlying address.</p>
+  </section>
+
+  <section class="section" id="distinctions" aria-labelledby="distinctionsTitle">
+    <div class="sectionhead"><div><span class="tag">04 / Concepts</span><h2 id="distinctionsTitle">Different operations, different purposes</h2></div></div>
+    <div class="tableWrap"><table class="walletTable">
+      <thead><tr><th scope="col">Operation</th><th scope="col">Meaning in the wallet</th></tr></thead>
+      <tbody>
+        <tr><td>Key generation</td><td>Creating new secret material from secure randomness, such as the initial entropy for a recovery phrase.</td></tr>
+        <tr><td>Key derivation</td><td>Deterministically calculating wallet keys from existing secret material using BIP-39 and BIP-32.</td></tr>
+        <tr><td>Public-key cryptography</td><td>Calculating Q = kG and verifying signatures using the corresponding public key.</td></tr>
+        <tr><td>Hashing</td><td>Converting input data into a fixed-size digest, as Keccak-256 does during address derivation.</td></tr>
+        <tr><td>Checksum</td><td>Detecting accidental errors; the EIP-55 case pattern is not a digital signature.</td></tr>
+        <tr><td>Encoding</td><td>Representing bytes as readable characters, such as the hexadecimal text of an address.</td></tr>
+      </tbody>
+    </table></div>
+    <p class="walletParagraph">The techniques complement one another. A hash function cannot replace the signature scheme, while elliptic-curve multiplication does not provide mnemonic backup, deterministic account organization, or address error detection.</p>
+  </section>
+
+  <section class="section" id="statistics" aria-labelledby="statisticsTitle">
+    <div class="sectionhead"><div><span class="tag">05 / Statistics</span><h2 id="statisticsTitle">Statistical observations</h2><p class="sub">Statistical measurements describe observable behavior. They do not, by themselves, prove cryptographic security.</p></div></div>
+    <div class="walletStats">
+      <article class="walletStat"><h3>Bit distribution</h3><p>For a uniformly distributed hash output, each bit has a probability close to ½ of being 1. For a single output, the observed number of ones may differ from half without indicating a weakness.</p></article>
+      <article class="walletStat"><h3>Avalanche effect</h3><p>Changing one input bit in a well-designed cryptographic hash is expected to change roughly half the output bits on average. The Hamming distance measures the number of different bit positions.</p></article>
+      <article class="walletStat"><h3>Addresses and checksums</h3><p>An Ethereum address is 160 bits (40 hexadecimal digits). Keccak-derived address values are expected to look well distributed, while EIP-55 capitalization is deliberately structured for error detection.</p></article>
+    </div>
+    <div class="card walletMeasured">
+      <p class="exampleLabel">SMALL REPRODUCIBLE EXPERIMENT / SHA-512</p>
+      <h3>Changing one input bit</h3>
+      <p>The ASCII strings <code>Ethereum</code> and <code>ethereum</code> differ by one bit in their first character (<code>E</code> = 0x45, <code>e</code> = 0x65). Both strings were hashed using SHA-512, and their 512 output bits were compared.</p>
+      <div class="measuredGrid" aria-label="SHA-512 experiment results">
+        <div><strong>260 / 512</strong><span>different output bits</span></div>
+        <div><strong>50.78%</strong><span>observed bit change</span></div>
+        <div><strong>265 / 269</strong><span>one-bits in each hash</span></div>
+      </div>
+      <p>The observed Hamming distance was 260 bits. For two independent, uniformly random 512-bit strings, the expected distance would be 256 bits. One comparison is illustrative rather than a statistical security test.</p>
+      <p class="small"><strong>Why SHA-512?</strong> SHA-512 is a component of HMAC-SHA512 used in BIP-39 and BIP-32. This experiment tests the ordinary SHA-512 hash function; it does <em>not</em> reproduce HMAC, Keccak-256 or the address-derivation process.</p>
+    </div>
+  </section>
+
+  <section class="section" id="history" aria-labelledby="historyTitle">
+    <div class="sectionhead"><div><span class="tag">06 / Background</span><h2 id="historyTitle">Historical context</h2></div></div>
+    <div class="tableWrap"><table class="walletTable">
+      <thead><tr><th scope="col">Year</th><th scope="col">Development</th><th scope="col">Significance</th></tr></thead>
+      <tbody>
+        <tr><td>1977</td><td>RSA</td><td>Influential early public-key cryptosystem.</td></tr>
+        <tr><td>2001</td><td>SHA-2 / SHA-512</td><td>Standardized cryptographic hash family.</td></tr>
+        <tr><td>2012</td><td>BIP-32</td><td>Hierarchical deterministic wallets.</td></tr>
+        <tr><td>2013</td><td>BIP-39</td><td>Mnemonic recovery phrases and seed generation.</td></tr>
+        <tr><td>2014</td><td>BIP-44</td><td>Multi-account deterministic derivation paths.</td></tr>
+        <tr><td>2015</td><td>SHA-3</td><td>NIST standardizes hash functions based on Keccak.</td></tr>
+        <tr><td>2016</td><td>EIP-55</td><td>Proposal for Ethereum address checksum capitalization.</td></tr>
+      </tbody>
+    </table></div>
+    <div class="walletCompare">
+      <h3>SHA-512, Keccak-256 and SHA3-256</h3>
+      <p><strong>SHA-512</strong> belongs to the SHA-2 family and produces 512-bit digests. <strong>Keccak-256</strong> and <strong>SHA3-256</strong> share the Keccak sponge design and produce 256-bit digests, but differ in padding/domain separation. Therefore, <strong>Keccak-256 ≠ SHA3-256</strong>. Ethereum address derivation specifically requires Keccak-256; substituting SHA3-256 would produce the wrong address.</p>
+    </div>
+  </section>
+
+  <section class="section" id="conclusion" aria-labelledby="conclusionTitle">
+    <div class="sectionhead"><div><span class="tag">07 / Final remarks</span><h2 id="conclusionTitle">Conclusion</h2></div></div>
+    <div class="card walletConclusion">
+      <p>This assignment shows that an Ethereum wallet address is the result of several distinct operations rather than a single cryptographic algorithm. BIP-39, BIP-32 and BIP-44 make keys recoverable and organized; secp256k1 establishes the public/private key relationship; Keccak-256 derives the address; and EIP-55 adds an error-detection convention.</p>
+      <p>The practical test vector confirms how these steps fit together. The SHA-512 comparison also illustrates how a one-bit input change can alter many output bits. However, one observed Hamming distance or an apparently balanced bit distribution is not evidence that a complete wallet implementation is secure. Sound cryptographic design, correct implementations and secure handling of recovery phrases remain essential.</p>
+    </div>
+  </section>
+</main>
+<footer class="footer"><div class="wrap"><span>STATISTICS · MSc CYBERSECURITY</span><span>HOMEWORK 02 / WALLET CRYPTOGRAPHY</span></div></footer>
+</body>
+</html>

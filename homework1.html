@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Statistics coursework: a reproducible experiment in elliptic-curve arithmetic, coordinate distributions and bit-level analysis.">
+<title>01 — Elliptic-curve experiment | Cybersecurity Statistics</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body class="assignmentPage">
+<header class="siteRail" aria-label="Course navigation">
+<a href="index.html" class="railIdentity" aria-label="Cybersecurity Statistics home"><span class="railMark">S<span class="markSlash">/</span>C</span><span class="railName">CYBERSECURITY<br>STATISTICS</span></a>
+<div class="railDivider"></div>
+<div class="railEyebrow">MSc CYBERSECURITY<br>STATISTICS COURSE</div>
+<nav aria-label="Page navigation" class="railNav">
+<a href="index.html"><span class="railNum">00</span> Overview</a>
+<a class="isCurrent" href="#lab"><span class="railNum">01</span> ECC experiment</a>
+<a href="#statistics"><span class="railNum">02</span> Statistical results</a>
+<a href="#methodology"><span class="railNum">03</span> Methodology</a>
+</nav>
+<div class="railFoot"><span class="railDot" aria-hidden="true"></span> COURSEWORK / 2026<br>EXPERIMENT NO. 01</div>
+</header>
+<main class="wrap" id="top">
+<div class="documentHeader"><span>RESEARCH EXERCISE / 01</span><span>APPLIED CRYPTOGRAPHY · FINITE FIELDS</span></div>
+<section class="hero" aria-labelledby="title">
+<div class="heroCopy">
+<p class="overline">A statistical study of a cryptographic primitive</p>
+<h1 id="title">The mathematics <em>behind</em><br> a public key<span class="period">.</span></h1>
+<p class="lead">A computational investigation of elliptic-curve scalar multiplication: from a private scalar to a public point, and from the generated points to measurable statistical patterns.</p>
+<div class="heroSmallprint"><span>01 / ECC arithmetic</span><span>02 / Data collection</span><span>03 / Interpretation</span></div>
+</div>
+<aside aria-label="Mathematical setup" class="heroNote">
+<div class="sheetCorner">FIG. 01 <span>TOY CURVE</span></div>
+<div class="equation">y² = x³ + 7</div>
+<div class="modline">over the finite field <strong>F₁₇</strong></div>
+<div class="rule"></div>
+<div class="formulaLabel">SCALAR MULTIPLICATION</div>
+<div class="equation secondEquation">Q = kG</div>
+<div class="formulaDatum">Base point G = (1, 5)<br>Private scalar k = 6</div>
+<div class="sheetBottom">EDUCATIONAL MODEL / NOT REAL KEY MATERIAL</div>
+</aside>
+</section>
+<section aria-labelledby="labtitle" class="section" id="lab">
+<div class="sectionhead">
+<div>
+<span class="tag">Experiment / 01</span>
+<h2 id="labtitle">
+       Calculate and follow the algorithm
+      </h2>
+<p class="sub">
+       Select a valid base point and a toy private scalar. See point addition, doubling, and the resulting toy public key.
+      </p>
+</div>
+</div>
+<div class="grid workspace">
+<div class="card controlPanel">
+<h3>
+       Configure the experiment
+      </h3>
+<div class="controlGrid">
+<div class="field">
+<label for="privateKey">
+         Private scalar k
+        </label>
+<input id="privateKey" max="5000" min="1" step="1" type="number" value="6"/>
+</div>
+<div class="field">
+<label for="basePoint">
+         Base point G
+        </label>
+<select id="basePoint">
+</select>
+</div>
+</div>
+<p class="inputHint" id="pointInfo">
+</p>
+<div class="field">
+<label for="algorithm">
+        Calculation method
+       </label>
+<select id="algorithm">
+<option value="auto">
+         Automatic (fast for large k)
+        </option>
+<option value="repeated">
+         Repeated point addition (k ≤ 64)
+        </option>
+<option value="fast">
+         Double-and-add (binary method)
+        </option>
+</select>
+</div>
+<div class="buttons">
+<button class="btn primary" id="calculate">
+        Calculate Q
+       </button>
+<button class="btn" id="play">
+        ▶ Animate
+       </button>
+<button class="btn" id="step">
+        Next step
+       </button>
+<button class="btn" id="reset">
+        Reset
+       </button>
+</div>
+<div class="controlsRow">
+<label class="fieldLabel" for="speed">
+        Animation speed
+       </label>
+<span class="small" id="speedLabel">
+        650 ms / step
+       </span>
+</div>
+<input aria-label="Animation interval milliseconds" id="speed" max="1500" min="150" step="50" type="range" value="650"/>
+<div aria-live="polite" class="status" id="status" role="status">
+</div>
+<div class="keyOutput">
+<div class="outputhead">
+        Toy public key · Q = kG
+       </div>
+<div class="keyValue" id="publicKey">
+        (5, 8)
+       </div>
+<p class="small" id="outputDetail">
+        6G = (5, 8)
+       </p>
+<div class="minirow">
+<span>
+         Base-point order:
+         <b id="orderText">
+          9
+         </b>
+</span>
+<span>
+         Curve group size:
+         <b id="curveCount">
+          18
+         </b>
+</span>
+</div>
+</div>
+<div class="stepCard">
+<div class="fieldLabel">
+        Current animated operation
+       </div>
+<div aria-live="polite" class="leadText" id="stepExplanation">
+        Select “Animate” to follow the calculation step by step.
+       </div>
+</div>
+</div>
+<div class="card figurePanel">
+<div class="sectionhead">
+<div>
+<h3>
+         Finite-field point map
+        </h3>
+<p class="small">
+         Valid points only · x and y are integers 0–16
+        </p>
+</div>
+<span class="pill" id="plotBadge">
+        k = 6
+       </span>
+</div>
+<div class="plotOuter">
+<svg aria-label="Valid points on the toy elliptic curve with the scalar-multiplication path highlighted" id="pointPlot" role="img" viewbox="0 0 570 530">
+</svg>
+</div>
+<div class="plotLegend">
+<span>
+<i class="legendDot legendOther">
+</i>
+        Other curve points
+       </span>
+<span>
+<i class="legendDot legendSubgroup">
+</i>
+        Selected subgroup
+       </span>
+<span>
+<i class="legendDot legendActive">
+</i>
+        Current point
+       </span>
+</div>
+<p class="stickyHint">
+       Dashed paths show the order of computed points,
+       <strong>
+        not
+       </strong>
+       geometric addition lines. Over a finite field, points are discrete.
+      </p>
+<div>
+<div class="fieldLabel">
+        Calculation trace
+       </div>
+<div aria-label="Sequence of scalar-multiplication steps" class="timeline" id="timeline">
+</div>
+</div>
+</div>
+</div>
+</section><section aria-labelledby="statstitle" class="section" id="statistics">
+<div class="sectionhead">
+<div>
+<span class="tag">
+       Statistics / 02
+      </span>
+<h2 id="statstitle">
+       What patterns appear in the outputs?
+      </h2>
+<p class="sub">
+       Evaluate public points for k = 1, 2, …, N using the currently selected base point. Changing N recomputes the data and charts.
+      </p>
+</div>
+<div class="field">
+<label for="sampleSize">
+       Number of scalars N
+      </label>
+<select id="sampleSize">
+<option value="8">
+        8
+       </option>
+<option value="18">
+        18
+       </option>
+<option selected="" value="72">
+        72
+       </option>
+<option value="180">
+        180
+       </option>
+<option value="360">
+        360
+       </option>
+</select>
+</div>
+</div>
+<div class="metrics">
+<div class="metric">
+<div class="n" id="finiteCount">
+       —
+      </div>
+<div class="lbl">
+       Finite point observations
+      </div>
+</div>
+<div class="metric">
+<div class="n" id="uniqueCount">
+       —
+      </div>
+<div class="lbl">
+       Distinct finite public points
+      </div>
+</div>
+<div class="metric">
+<div class="n" id="infinityCount">
+       —
+      </div>
+<div class="lbl">
+       Identity (∞) observations
+      </div>
+</div>
+<div class="metric">
+<div class="n" id="meanHamming">
+       —
+      </div>
+<div class="lbl">
+       Mean consecutive Hamming distance
+      </div>
+</div>
+</div>
+<div class="grid two">
+<div class="card">
+<h3>
+       Frequency of x-coordinates
+      </h3>
+<p class="small">
+       Count of each integer x ∈ {0,…,16}; infinity is excluded.
+      </p>
+<div aria-label="Histogram of public-key x-coordinates" class="barChart" id="xBars" role="img">
+</div>
+<p class="chartCaption" id="xCaption">
+</p>
+</div>
+<div class="card">
+<h3>
+       Frequency of y-coordinates
+      </h3>
+<p class="small">
+       Count of each integer y ∈ {0,…,16}; infinity is excluded.
+      </p>
+<div aria-label="Histogram of public-key y-coordinates" class="barChart" id="yBars" role="img">
+</div>
+<p class="chartCaption" id="yCaption">
+</p>
+</div>
+<div class="card">
+<h3>
+       Binary bit distribution
+      </h3>
+<p class="small">
+       Each finite x and y coordinate is encoded using five bits (0–16).
+      </p>
+<div aria-label="Relative frequencies of zero and one bits" class="bitStack" role="img">
+<div class="bit0" id="bit0">
+</div>
+<div class="bit1" id="bit1">
+</div>
+</div>
+<div class="bitLabels">
+<span id="zeroLabel">
+        0 bits: —
+       </span>
+<span id="oneLabel">
+        1 bits: —
+       </span>
+</div>
+<p class="statMeta" id="bitCaption">
+</p>
+</div>
+<div class="card">
+<h3>
+       Consecutive point Hamming distances
+      </h3>
+<p class="small">
+       Bit differences between (x,y) for successive scalar values when both points are finite; 10 bits per point.
+      </p>
+<div aria-label="Histogram of successive-point Hamming distances" class="barChart" id="hammingBars" role="img">
+</div>
+<p class="chartCaption" id="hammingCaption">
+</p>
+</div>
+</div>
+<div class="grid two">
+<div class="card">
+<h3>
+       Correlation: k versus coordinates
+      </h3>
+<p class="leadText">
+       Pearson's r measures
+       <em>
+        linear
+       </em>
+       association only; it does not test cryptographic security.
+      </p>
+<p id="correlations">
+</p>
+<p class="small">
+       Computed using finite observations; repeated scalar cycles create dependence between measurements.
+      </p>
+</div>
+<div class="card">
+<h3>
+       What does the sample tell us?
+      </h3>
+<div class="leadText" id="sampleConclusion">
+</div>
+</div>
+</div>
+<div class="card">
+<h3>
+      Computed dataset (first 24 rows)
+     </h3>
+<p class="small">
+      The full sample contributes to every statistic. Infinity has no affine x or y coordinates.
+     </p>
+<div class="tableWrap">
+<table>
+<thead>
+<tr>
+<th scope="col">
+          k
+         </th>
+<th scope="col">
+          kG
+         </th>
+<th scope="col">
+          x
+         </th>
+<th scope="col">
+          y
+         </th>
+<th scope="col">
+          Binary x | y
+         </th>
+</tr>
+</thead>
+<tbody id="dataRows">
+</tbody>
+</table>
+</div>
+</div>
+</section><section aria-labelledby="methodstitle" class="section" id="methodology">
+<div class="sectionhead">
+<div>
+<span class="tag">
+       Mathematics / 03
+      </span>
+<h2 id="methodstitle">
+       Method and interpretation
+      </h2>
+<p class="sub">
+       The browser uses modular arithmetic on the finite field F₁₇. “Division” means multiplying by the modular inverse.
+      </p>
+</div>
+</div>
+<div class="formulas">
+<div class="formula">
+<b>
+       Distinct points P ≠ R
+      </b>
+<br/>
+<span class="math">
+       λ = (y₂ − y₁) × (x₂ − x₁)⁻¹ mod 17
+      </span>
+</div>
+<div class="formula">
+<b>
+       Point doubling P = R
+      </b>
+<br/>
+<span class="math">
+       λ = (3x₁²) × (2y₁)⁻¹ mod 17
+      </span>
+</div>
+<div class="formula">
+<b>
+       Result x-coordinate
+      </b>
+<br/>
+<span class="math">
+       x₃ = (λ² − x₁ − x₂) mod 17
+      </span>
+</div>
+<div class="formula">
+<b>
+       Result y-coordinate
+      </b>
+<br/>
+<span class="math">
+       y₃ = (λ(x₁ − x₃) − y₁) mod 17
+      </span>
+</div>
+</div>
+<div class="callout">
+<strong>
+      Special cases:
+     </strong>
+     the identity point ∞ satisfies P + ∞ = P. If P and R are inverses, P + R = ∞. Doubling a point with y = 0 also yields ∞. Fast scalar multiplication uses binary
+     <em>
+      double-and-add
+     </em>
+     rather than k consecutive additions.
+    </div>
+<div class="research">
+<article>
+<div class="num">
+       01 · FREQUENCY
+      </div>
+<h3>
+       Uniformity has a domain
+      </h3>
+<p class="small">
+       The full toy curve has 17 finite points plus ∞. The default G=(1,5) generates only 9 group elements: eight finite points and ∞. Coordinate histograms need not be uniform across 0–16.
+      </p>
+</article>
+<article>
+<div class="num">
+       02 · STRUCTURE
+      </div>
+<h3>
+       ECDLP, not hashing
+      </h3>
+<p class="small">
+       For k in a suitable range, Q=kG is deterministic and hard to invert on real cryptographic curves. Consecutive keys satisfy (k+1)G = kG + G: a known algebraic relationship.
+      </p>
+</article>
+<article>
+<div class="num">
+       03 · LIMITATION
+      </div>
+<h3>
+       Statistics ≠ proof of security
+      </h3>
+<p class="small">
+       Balanced bits, weak Pearson correlations, or large Hamming distances do not prove one-wayness. Avalanche properties are normally studied for hash functions, not required of elliptic-curve multiplication.
+      </p>
+</article>
+</div>
+</section>
+<section class="section" id="conclusion">
+    <div class="sectionhead">
+        <div>
+            <span class="tag">Final Remarks / 04</span>
+            <h2>Conclusion</h2>
+            <p class="sub">
+                Summary of the experiment and statistical findings.
+            </p>
+        </div>
+    </div>
+
+    <div class="card">
+        <p>
+            In this assignment, I explored how elliptic-curve scalar
+            multiplication can be used to generate a public key from
+            a private key. Using the toy elliptic curve
+            y² = x³ + 7 (mod 17), I implemented point addition and
+            scalar multiplication in JavaScript. For the private key
+            k = 6 and base point G = (1,5), the resulting public key
+            was Q = (5,8).
+        </p>
+
+        <p>
+            Beyond implementing the algorithm, I examined the statistical
+            properties of the generated points, including coordinate
+            distributions, bit frequencies, correlation, and Hamming
+            distances. The results showed that the distribution of
+            public-key coordinates is influenced by the mathematical
+            structure of the elliptic curve and the selected base point.
+            In particular, the repeated patterns observed in the
+            experiment are explained by the small order of the
+            base point.
+        </p>
+
+        <p>
+            One important observation is that statistical properties
+            alone cannot determine whether a cryptographic algorithm
+            is secure. For example, a low correlation between private
+            keys and public-key coordinates does not necessarily imply
+            that the relationship is unpredictable. Similarly,
+            avalanche-like behavior is not a security requirement
+            for elliptic-curve scalar multiplication in the same way
+            that it is commonly studied for cryptographic hash functions.
+        </p>
+
+        <p>
+            Overall, this experiment helped me understand the connection
+            between elliptic-curve mathematics and statistical analysis.
+            It also highlighted the importance of considering the
+            mathematical structure of cryptographic systems when
+            interpreting statistical results. Although the toy curve
+            is not suitable for real-world security, it provides a
+            useful foundation for understanding the principles behind
+            elliptic-curve cryptography used in Ethereum.
+        </p>
+    </div>
+</section>
+</main>
+<footer class="footer"><div class="wrap"><span>STATISTICS · MSc CYBERSECURITY</span><span>HW 01 / FINITE FIELD ECC</span></div></footer>
+<script src="js/ecc.js" defer></script>
+<script src="js/homework1.js" defer></script>
+</body>
+</html>
