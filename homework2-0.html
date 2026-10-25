@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Homework 2.0: a toy elliptic-curve encryption demonstration, Caesar cipher, and statistical cryptanalysis.">
+  <title>Homework 2.0 — Encryption and Statistical Cryptanalysis</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/homework2-0.css">
+  <script src="js/secp256k1-toy.js" defer></script>
+  <script src="js/classical-cipher.js" defer></script>
+  <script src="js/homework2-0.js" defer></script>
+</head>
+<body>
+<header class="siteRail" aria-label="Course navigation">
+  <a href="index.html" class="railIdentity" aria-label="Cybersecurity Statistics home"><span class="railMark">S<span class="markSlash">/</span>C</span><span class="railName">CYBERSECURITY<br>STATISTICS</span></a>
+  <div class="railDivider"></div>
+  <div class="railEyebrow">MSc CYBERSECURITY<br>STATISTICS COURSE</div>
+  <nav class="railNav" aria-label="Main navigation">
+    <a href="index.html"><span class="railNum">00</span> Overview</a>
+    <a href="homework1.html"><span class="railNum">01</span> Homework 1</a>
+    <a href="homework2.html"><span class="railNum">02</span> Homework 2</a>
+    <a class="isCurrent" href="homework2-0.html"><span class="railNum">2.0</span> Homework 2.0</a>
+  </nav>
+  <div class="railFoot"><span class="railDot" aria-hidden="true"></span> COURSEWORK / 2026<br>COMPUTATIONAL STUDY</div>
+</header>
+
+<main class="wrap">
+  <div class="documentHeader"><span>HOMEWORK 2.0 / ENCRYPTION</span><span>MSc CYBERSECURITY · STATISTICS</span></div>
+
+  <section class="walletIntro" aria-labelledby="pageTitle">
+    <p class="overline">Classical cipher · Elliptic-curve cryptography · Cryptanalysis</p>
+    <h1 id="pageTitle">Encryption, decryption and <em>statistical attacks</em><span class="period">.</span></h1>
+    <p class="lead">This assignment compares the Caesar cipher with a small EC-ElGamal-style demonstration using secp256k1. It implements both encryption and decryption, tests letter-frequency analysis, and shows why a deliberately restricted private-key range makes an elliptic-curve scheme vulnerable to brute-force search.</p>
+    <p class="walletContext"><strong>Scope note.</strong> secp256k1 is an elliptic curve, not an encryption algorithm by itself. The page defines a simple ElGamal-style construction over that curve for educational purposes. Ethereum commonly uses secp256k1 for digital signatures; this page is not describing Ethereum transaction encryption. Do not use this demonstration to protect real messages or keys.</p>
+  </section>
+
+  <section class="section" id="ecc-demo" aria-labelledby="eccTitle">
+    <div class="sectionhead">
+      <div><span class="tag">01 / Elliptic-curve scheme</span><h2 id="eccTitle">Encrypt and decrypt a message</h2><p class="sub">The curve parameters are secp256k1, but the private key is restricted to 1–1,000 so that the attack can be demonstrated quickly.</p></div>
+    </div>
+
+    <div class="callout eccWarning"><strong>Educational limitation:</strong> the implementation uses browser-generated random ephemeral scalars, but the private-key range is intentionally tiny and the JavaScript arithmetic is not designed to be constant-time. This is a learning example, not production cryptography.</div>
+    <p class="walletParagraph">The secp256k1 curve is defined by <code>y² ≡ x³ + 7 (mod p)</code>, where <code>p = 2²⁵⁶ − 2³² − 977</code>. The standard generator point is G and has a large prime order n. This page uses the standard curve parameters, but limits the private scalar to 1–1,000 only for the key-recovery experiment.</p>
+
+    <div class="grid two eccLayout">
+      <div class="card controlPanel eccControls">
+        <h3>Encryption controls</h3>
+        <div class="field">
+          <label for="eccPrivateKey">Private scalar d (1–1,000)</label>
+          <input id="eccPrivateKey" type="number" min="1" max="1000" step="1" value="37">
+        </div>
+        <div class="field eccMessageField">
+          <label for="eccMessage">Message (printable ASCII)</label>
+          <textarea id="eccMessage" rows="3" maxlength="80">Hello, world!</textarea>
+        </div>
+        <p class="inputHint">The same public/private key pair is used for the message. Each character is encoded as a small multiple of G and encrypted with a fresh ephemeral scalar.</p>
+        <div class="buttons">
+          <button class="btn primary" id="eccEncryptBtn" type="button">Encrypt and decrypt</button>
+          <button class="btn" id="eccAttackBtn" type="button">Attack key range</button>
+        </div>
+        <p class="status" id="eccStatus" role="status" aria-live="polite">Ready. Run the encryption experiment.</p>
+      </div>
+
+      <div class="card eccKeyCard">
+        <p class="exampleLabel">PUBLIC KEY / Q = dG</p>
+        <div class="eccKeyValue" id="eccPublicKey">Run the experiment to calculate Q.</div>
+        <p class="small">The public point Q may be shared. The private scalar d should remain secret. In this experiment, the restricted range is intentionally weak.</p>
+        <div class="eccResultPair">
+          <div><span>Decrypted message</span><strong id="eccDecrypted">—</strong></div>
+          <div><span>Point pairs in ciphertext</span><strong id="eccPairCount">—</strong></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card eccCipherCard">
+      <div class="sectionhead compactHead"><div><span class="tag">Ciphertext sample</span><h3>Encrypted point pairs</h3><p class="sub">Coordinates are abbreviated in this table for readability; the calculations use the complete point values.</p></div></div>
+      <div class="tableWrap">
+        <table class="walletTable">
+          <thead><tr><th scope="col">Character</th><th scope="col">Encoded value</th><th scope="col">C₁ = rG</th><th scope="col">C₂ = M + rQ</th></tr></thead>
+          <tbody id="eccCipherRows"><tr><td colspan="4">Run encryption to display the first ciphertext points.</td></tr></tbody>
+        </table>
+      </div>
+      <p class="small" id="eccAttackResult" aria-live="polite">The restricted-key attack will compare candidate points dG with the public point Q.</p>
+    </div>
+
+    <div class="walletPath eccFormulaPath">
+      <div><span class="exampleLabel">ENCRYPTION</span><div class="pathText">C₁ = rG<br>C₂ = M + rQ</div></div>
+      <div><span class="exampleLabel">DECRYPTION</span><div class="pathText">M = C₂ − dC₁</div><p>Because Q = dG, we have dC₁ = d(rG) = rQ. Subtracting this term recovers M. A small lookup table maps the recovered point back to the character code.</p></div>
+    </div>
+
+    <div class="sectionhead subsectionHead"><div><span class="tag">Key roles</span><h3>What each key does</h3></div></div>
+    <div class="tableWrap">
+      <table class="walletTable">
+        <thead><tr><th scope="col">Value</th><th scope="col">Role</th><th scope="col">Secret?</th></tr></thead>
+        <tbody>
+          <tr><td>d</td><td>Private scalar; used to derive Q and decrypt the ciphertext.</td><td>Yes</td></tr>
+          <tr><td>Q = dG</td><td>Public point; used by the sender to encrypt a message.</td><td>No</td></tr>
+          <tr><td>r</td><td>Fresh ephemeral scalar selected for each character encryption.</td><td>Must remain secret; do not reuse in real systems</td></tr>
+          <tr><td>(C₁, C₂)</td><td>Ciphertext point pair for one encoded character.</td><td>No</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="section" id="caesar-demo" aria-labelledby="caesarTitle">
+    <div class="sectionhead"><div><span class="tag">02 / Classical cipher</span><h2 id="caesarTitle">Caesar cipher: encryption and decryption</h2><p class="sub">A Caesar cipher shifts each letter by a fixed number of alphabet positions. Uppercase and lowercase are preserved; spaces and punctuation remain unchanged.</p></div></div>
+    <div class="grid two">
+      <div class="card">
+        <div class="field"><label for="caesarMessage">Message</label><textarea id="caesarMessage" rows="3">Hello, world!</textarea></div>
+        <div class="field caesarShiftField"><label for="caesarShift">Shift key (0–25)</label><input id="caesarShift" type="number" min="0" max="25" step="1" value="7"></div>
+        <div class="buttons"><button class="btn primary" id="caesarEncryptBtn" type="button">Encrypt</button><button class="btn" id="caesarDecryptBtn" type="button">Decrypt</button></div>
+      </div>
+      <div class="card caesarOutputCard">
+        <div class="field"><label for="caesarCiphertext">Ciphertext</label><textarea id="caesarCiphertext" rows="3" spellcheck="false"></textarea></div>
+        <div class="field"><label for="caesarPlaintext">Decrypted output</label><textarea id="caesarPlaintext" rows="3" readonly></textarea></div>
+        <p class="small" id="caesarStatus" role="status" aria-live="polite">The default message is ready to encrypt.</p>
+      </div>
+    </div>
+    <div class="walletCompare">
+      <h3>Why is Caesar easy to break?</h3>
+      <p>There are only 26 possible shifts (including a shift of zero). An attacker can test every key, or compare letter frequencies with expected frequencies in the known language. The cipher merely permutes letter identities, so it preserves the overall frequency profile, just under shifted labels.</p>
+    </div>
+  </section>
+
+  <section class="section" id="frequency-attack" aria-labelledby="frequencyTitle">
+    <div class="sectionhead"><div><span class="tag">03 / Statistical cryptanalysis</span><h2 id="frequencyTitle">Recover a Caesar key from letter frequencies</h2><p class="sub">This experiment encrypts an English-language corpus with a known shift, then tries to recover that shift without giving it to the attack algorithm.</p></div></div>
+    <div class="card frequencyCard">
+      <div class="controlGrid frequencyControls">
+        <div class="field"><label for="frequencyShift">Known shift used for this experiment</label><input id="frequencyShift" type="number" min="0" max="25" step="1" value="7"></div>
+        <div class="field"><label for="frequencyCorpus">English text corpus</label><span class="inputHint">Edit the text to try another sample. Only A–Z letters are counted in the statistical score.</span></div>
+      </div>
+      <textarea class="corpusArea" id="frequencyCorpus" rows="11" spellcheck="true" aria-label="English text corpus"></textarea>
+      <div class="buttons frequencyButtons">
+        <button class="btn" id="frequencyEncryptBtn" type="button">Encrypt corpus</button>
+        <button class="btn primary" id="frequencyAttackBtn" type="button">Run frequency attack</button>
+        <button class="btn" id="frequencyLengthsBtn" type="button">Test different lengths</button>
+        <button class="btn" id="frequencyCandidatesBtn" type="button">Show all 26 shifts</button>
+      </div>
+      <div class="field"><label for="frequencyCiphertext">Ciphertext used by the attack</label><textarea class="corpusArea" id="frequencyCiphertext" rows="7" spellcheck="false"></textarea></div>
+      <div class="attackSummary" id="frequencyAttackResult" aria-live="polite">Encrypt the corpus, then run the frequency attack.</div>
+      <div class="attackPlaintext" id="frequencyRecoveredText" aria-live="polite"></div>
+      <div class="tableWrap lengthTableWrap">
+        <table class="walletTable">
+          <thead><tr><th scope="col">Sample size (letters)</th><th scope="col">Estimated shift</th><th scope="col">Matches experiment key?</th><th scope="col">Chi-square score</th></tr></thead>
+          <tbody id="frequencyLengthRows"><tr><td colspan="4">Choose “Test different lengths” to compare sample sizes.</td></tr></tbody>
+        </table>
+      </div>
+      <p class="walletParagraph">For the default corpus, the 20-, 40-, and 80-letter samples do not identify the original shift correctly, while the 120-letter sample and longer samples recover shift 7. This is an observation for this particular text, not a universal minimum length: a different message can produce different results.</p>
+      <details class="candidateDetails" id="candidateDetails">
+        <summary>Exhaustive search results (all 26 keys)</summary>
+        <div class="tableWrap"><table class="walletTable"><thead><tr><th scope="col">Candidate shift</th><th scope="col">Beginning of candidate plaintext</th><th scope="col">Chi-square score</th></tr></thead><tbody id="frequencyCandidateRows"><tr><td colspan="3">Choose “Show all 26 shifts”.</td></tr></tbody></table></div>
+      </details>
+    </div>
+    <div class="grid two frequencyNotes">
+      <article class="frequencyNote"><div class="num">METHOD A</div><h3>Exhaustive search</h3><p>Try every shift from 0 to 25. The key space is so small that this is already practical and does not depend on language statistics. A human still has to identify the readable plaintext.</p></article>
+      <article class="frequencyNote"><div class="num">METHOD B</div><h3>Frequency scoring</h3><p>This page uses a chi-square score to compare the candidate plaintext's letter counts with typical English frequencies. The lowest score is treated as the best candidate, not as a guarantee.</p></article>
+    </div>
+    <p class="walletParagraph"><strong>Limitations.</strong> Short ciphertexts have noisy letter counts; names, technical terms, unusual writing styles and a mismatch between the assumed and actual language can lead to the wrong key. N-gram scoring (using common pairs or triples of letters) can improve ranking, but it is not necessary for this basic experiment and it can also fail on very short texts.</p>
+  </section>
+
+  <section class="section" id="comparison" aria-labelledby="comparisonTitle">
+    <div class="sectionhead"><div><span class="tag">04 / Comparison</span><h2 id="comparisonTitle">Two schemes, different security properties</h2><p class="sub">Both transform a message, but they use different key models and leave different statistical traces.</p></div></div>
+    <div class="tableWrap">
+      <table class="walletTable comparisonTable">
+        <thead><tr><th scope="col">Property</th><th scope="col">Caesar cipher</th><th scope="col">Toy EC-ElGamal over secp256k1</th></tr></thead>
+        <tbody>
+          <tr><td>Key model</td><td>One shared shift from 0 to 25.</td><td>Private scalar d and public point Q = dG; each character also uses a fresh ephemeral scalar r.</td></tr>
+          <tr><td>Encryption</td><td>Shift each letter by the key.</td><td>Encode character c as M = cG; compute C₁ = rG and C₂ = M + rQ.</td></tr>
+          <tr><td>Decryption</td><td>Shift letters backward by the same key.</td><td>Compute M = C₂ − dC₁, then map the point back to its character code.</td></tr>
+          <tr><td>Key space in this experiment</td><td>26 possibilities; exhaustive search is immediate.</td><td>1,000 private-key candidates by design; the public point can be matched against every candidate.</td></tr>
+          <tr><td>Statistical behavior</td><td>Letter frequencies are preserved but shifted, enabling frequency analysis.</td><td>Fresh randomness changes ciphertext points, so simple letter-frequency analysis is not directly applicable. Ciphertext length remains visible.</td></tr>
+          <tr><td>Main weakness here</td><td>Tiny key space and preserved language statistics.</td><td>The deliberately restricted private-key range, plus the fact that this is an unauthenticated teaching construction.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="section" id="ecc-attack" aria-labelledby="attackTitle">
+    <div class="sectionhead"><div><span class="tag">05 / Restricted-key attack</span><h2 id="attackTitle">Why the toy ECC key can be recovered</h2><p class="sub">The attack checks d = 1, 2, 3, … and calculates dG until the result matches the public point Q.</p></div></div>
+    <div class="card attackExplanation">
+      <p>In the demonstration, the private scalar is selected from only 1,000 candidates. This is approximately <strong>log₂(1,000) ≈ 10 bits</strong> of key-space uncertainty. Because scalar multiplication is easy to compute in the forward direction, an attacker can enumerate the permitted candidates and compare each candidate public point with Q. After recovering d, the attacker can decrypt the saved ciphertext.</p>
+      <p>With a properly generated secp256k1 private key, the scalar is selected from a range of roughly 2²⁵⁶ values. Direct exhaustive search over that range is infeasible. Generic discrete-log algorithms reduce the work compared with naive exhaustive search, to roughly 2¹²⁸ group operations for a 256-bit prime-order group, which is still infeasible in practice with current classical computing.</p>
+      <p><strong>Important distinction:</strong> the immediate weakness in this experiment is the restricted private-key range. Separately, the demonstration lacks authentication and uses simple character-to-point encoding; it should not be treated as a complete, production-ready encryption protocol.</p>
+    </div>
+  </section>
+
+  <section class="section" id="conclusion" aria-labelledby="conclusionTitle">
+    <div class="sectionhead"><div><span class="tag">06 / Final remarks</span><h2 id="conclusionTitle">Conclusion</h2></div></div>
+    <div class="card walletConclusion">
+      <p>In this assignment, I implemented encryption and decryption using a Caesar cipher and a toy EC-ElGamal-style scheme over secp256k1. The Caesar cipher uses a single shared shift, and its small key space makes exhaustive search straightforward. Its letter-frequency pattern is also preserved under a shift, which allows a statistical attack to rank likely plaintexts.</p>
+      <p>The elliptic-curve example uses a private scalar and corresponding public point. Each character is encoded as a point, encrypted with a fresh ephemeral scalar, and recovered using the private key. The restricted-key experiment shows that the public key does not protect a weak secret: testing all 1,000 candidates is enough to recover the private scalar and decrypt the message.</p>
+      <p>The main conclusion is that statistical analysis can reveal weaknesses in simple substitution ciphers, while key-space analysis is the decisive attack against this deliberately restricted ECC example. A full-size key space is essential, but it does not by itself make an arbitrary construction secure. Real systems also need reviewed protocols, reliable randomness, authentication, and careful implementation.</p>
+    </div>
+  </section>
+</main>
+
+<footer class="footer"><div class="wrap"><span>STATISTICS · MSc CYBERSECURITY</span><span>HOMEWORK 2.0 / ENCRYPTION & CRYPTANALYSIS</span></div></footer>
+</body>
+</html>

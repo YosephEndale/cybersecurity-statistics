@@ -1,0 +1,84 @@
+/* Homework 2.0 additions. The shared paper-and-ink stylesheet supplies the base layout. */
+.eccWarning { margin: 0 0 24px; }
+.eccLayout { align-items: stretch; }
+.eccControls .field { margin-bottom: 15px; }
+.field textarea, .corpusArea {
+  display: block;
+  width: 100%;
+  min-height: 92px;
+  resize: vertical;
+  padding: 12px 13px;
+  border: 1px solid #8fa097;
+  border-radius: 0;
+  background: #fffef8;
+  color: var(--ink);
+  font: 14px/1.65 var(--sans);
+}
+.field textarea:focus, .corpusArea:focus { outline: 2px solid #e9b1a2; outline-offset: 1px; border-color: var(--red); }
+.eccMessageField textarea { min-height: 90px; }
+.eccKeyCard { background: #fdfbf4; display: flex; flex-direction: column; }
+.eccKeyValue {
+  font: 11px/1.8 var(--mono);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  color: var(--blue-deep);
+  padding: 12px 0 17px;
+  border-bottom: 1px solid var(--line);
+}
+.eccResultPair { margin-top: auto; padding-top: 17px; display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 18px; }
+.eccResultPair > div { min-width: 0; }
+.eccResultPair span { display: block; color: var(--muted); font: 10px/1.5 var(--mono); text-transform: uppercase; letter-spacing: .04em; }
+.eccResultPair strong { display: block; margin-top: 6px; font: normal 22px/1.4 var(--serif); color: var(--red-strong); overflow-wrap: anywhere; }
+.eccCipherCard { margin-top: 23px; }
+.compactHead { margin-bottom: 12px; }
+.compactHead h3 { font-size: 25px; margin: 7px 0 5px; }
+.compactHead .sub { font-size: 12px; }
+.eccCipherCard .tableWrap { margin-top: 10px; }
+.eccCipherCard td { overflow-wrap: anywhere; }
+#eccAttackResult { white-space: pre-line; }
+.eccCipherCard td:nth-child(n+3) { font-family: var(--mono); font-size: 10px; }
+.eccCipherCard td:first-child { font-family: var(--sans); font-size: 13px; }
+.eccFormulaPath { margin-top: 22px; }
+.eccFormulaPath .pathText { font-size: 17px; }
+.subsectionHead { margin: 35px 0 15px; }
+.subsectionHead h3 { font-size: 25px; margin: 8px 0 0; }
+.caesarShiftField { max-width: 220px; margin-top: 15px; }
+.caesarOutputCard { background: #fdfbf4; }
+.caesarOutputCard .field + .field { margin-top: 15px; }
+.caesarOutputCard textarea { min-height: 83px; }
+.frequencyCard { background: #fdfbf4; }
+.frequencyControls { grid-template-columns: minmax(180px,.5fr) minmax(0,1fr); align-items: end; margin-bottom: 10px; }
+.frequencyControls .field { margin: 0; }
+.frequencyControls input { max-width: 220px; }
+.frequencyControls .inputHint { margin: 0; }
+.corpusArea { min-height: 240px; font-size: 13px; }
+.frequencyButtons { grid-template-columns: repeat(2,minmax(0,1fr)); }
+.attackSummary { margin: 20px 0 0; padding: 16px 18px; border-left: 4px solid var(--blue); background: #e8ece5; color: #273e3d; font-size: 14px; line-height: 1.7; }
+.attackSummary strong { color: var(--red-strong); }
+.attackPlaintext { margin-top: 14px; padding: 14px 16px; background: #f1eee4; font-size: 13px; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; }
+.lengthTableWrap { margin-top: 24px; }
+.lengthTableWrap td, .lengthTableWrap th { white-space: nowrap; }
+.candidateDetails { margin-top: 22px; border-top: 1px solid var(--line); padding-top: 15px; }
+.candidateDetails summary { cursor: pointer; color: var(--blue-deep); font: 700 12px/1.6 var(--mono); }
+.candidateDetails .tableWrap { margin-top: 15px; }
+.candidateDetails td:last-child { white-space: nowrap; }
+.frequencyNotes { margin-top: 22px; }
+.frequencyNote { padding: 18px 0; border-top: 2px solid var(--red); }
+.frequencyNote .num { font: 700 11px var(--mono); letter-spacing: .08em; color: var(--red-strong); }
+.frequencyNote h3 { font-size: 23px; margin: 10px 0; }
+.frequencyNote p { margin-bottom: 0; color: var(--muted); font-size: 13px; }
+.attackExplanation { max-width: 1000px; }
+.attackExplanation p { font-size: 14px; }
+.attackExplanation p:last-child { margin-bottom: 0; }
+.comparisonTable td:first-child { min-width: 145px; }
+.comparisonTable td { vertical-align: top; }
+.walletSources li { margin-bottom: 3px; }
+
+@media (max-width: 740px) {
+  .frequencyControls { grid-template-columns: 1fr; gap: 8px; }
+  .frequencyControls input { max-width: none; }
+  .frequencyButtons { grid-template-columns: 1fr; }
+  .eccResultPair { grid-template-columns: 1fr; }
+  .eccCipherCard td:nth-child(n+3) { min-width: 130px; }
+  .comparisonTable td:first-child { min-width: 110px; }
+}
