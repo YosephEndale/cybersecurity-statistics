@@ -1,0 +1,1467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Homework 4.0: Welford's online recurrence for the sample mean and variance, with simulations across independent hackers and systems.">
+<title>Homework 4.0 — Welford's Recurrence and Sampling Statistics</title>
+
+<link rel="stylesheet" href="css/style.css">
+
+<style>
+/* Page-specific additions; the main visual system comes from css/style.css. */
+.welfordPage {
+  padding-bottom: 70px;
+}
+
+.welfordPage .walletIntro {
+  padding: 62px 0 48px;
+}
+
+.welfordPage .walletIntro h1 {
+  max-width: 980px;
+}
+
+.welfordPage .studentSignature {
+  margin-top: 35px;
+}
+
+.welfordPage .mathline {
+  color: var(--blue-deep);
+  font: 14px/1.9 var(--mono);
+  overflow-wrap: anywhere;
+}
+
+.welfordPage .mathBlock {
+  background: #f1f0e8;
+  border-left: 4px solid var(--red);
+  padding: 17px 20px;
+  margin: 15px 0;
+}
+
+.welfordPage .codeBlock {
+  margin: 15px 0 0;
+  padding: 19px 21px;
+  overflow-x: auto;
+  background: #1d3235;
+  color: #fff9eb;
+  border-left: 4px solid var(--red);
+  font: 12px/1.8 var(--mono);
+}
+
+.welfordPage .codeBlock code {
+  font: inherit;
+  white-space: pre;
+}
+
+.welfordPage .metrics {
+  margin: 22px 0 25px;
+}
+
+.welfordPage .metric .lbl {
+  display: block;
+  font: 11px/1.6 var(--mono);
+  color: var(--muted);
+}
+
+.welfordPage .metric .n {
+  display: block;
+  font: normal clamp(26px, 2.7vw, 38px)/1.12 var(--serif);
+  color: var(--red-strong);
+  margin: 8px 0;
+  overflow-wrap: anywhere;
+}
+
+.welfordPage .metric small {
+  display: block;
+  font: 11px/1.5 var(--mono);
+  color: var(--muted);
+}
+
+.welfordPage .controlGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.welfordPage .chartWrap {
+  width: 100%;
+  overflow: hidden;
+  margin-top: 12px;
+}
+
+.welfordPage .chart {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: #fffefa;
+  border: 1px solid var(--line);
+}
+
+.welfordPage .chartNote {
+  margin: 10px 0 0;
+  font: 11px/1.7 var(--mono);
+  color: var(--muted);
+}
+
+.welfordPage .tableWrap {
+  margin-top: 12px;
+}
+
+.welfordPage .tableWrap td {
+  vertical-align: top;
+}
+
+.welfordPage .numberCell {
+  font-family: var(--mono);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.welfordPage .callout {
+  margin-top: 18px;
+}
+
+.welfordPage .buttons {
+  max-width: 560px;
+}
+
+.welfordPage .status {
+  min-height: 24px;
+}
+
+.welfordPage .footer {
+  margin: 45px 0 0;
+}
+
+.welfordPage .distributionValues {
+  font: 13px/1.9 var(--mono);
+  color: var(--blue-deep);
+  overflow-wrap: anywhere;
+}
+
+.welfordPage .formulaNote {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+@media(max-width:880px) {
+  .welfordPage .walletIntro {
+    padding: 42px 0 38px;
+  }
+}
+
+@media(max-width:640px) {
+  .welfordPage .walletIntro {
+    padding: 38px 0 32px;
+  }
+
+  .welfordPage .controlGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .welfordPage .metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .welfordPage .metric {
+    padding: 17px 10px;
+    min-height: 108px;
+  }
+
+  .welfordPage .metric .n {
+    font-size: 27px;
+  }
+
+  .welfordPage .metric .lbl {
+    font-size: 10px;
+  }
+
+  .welfordPage .sectionhead {
+    display: block;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<header class="siteRail" aria-label="Course navigation">
+
+  <a href="index.html" class="railIdentity" aria-label="Cybersecurity Statistics home">
+    <span class="railMark">S<span class="markSlash">/</span>C</span>
+    <span class="railName">CYBERSECURITY<br>STATISTICS</span>
+  </a>
+
+  <div class="railDivider"></div>
+
+  <div class="railEyebrow">
+    MSc CYBERSECURITY<br>
+    STATISTICS COURSE
+  </div>
+
+  <nav class="railNav" aria-label="Main navigation">
+    <a href="index.html">
+      <span class="railNum">00</span> Overview
+    </a>
+
+    <a href="homework1.html">
+      <span class="railNum">01</span> Homework 1
+    </a>
+
+    <a href="homework2.html">
+      <span class="railNum">02</span> Homework 2
+    </a>
+
+    <a href="homework2-0.html">
+      <span class="railNum">2.0</span> Homework 2.0
+    </a>
+
+    <a href="homework4.html">
+      <span class="railNum">04</span> Homework 4
+    </a>
+
+    <a class="isCurrent" href="homework4-0.html">
+      <span class="railNum">4.0</span> Homework 4.0
+    </a>
+  </nav>
+
+  <div class="railFoot">
+    <span class="railDot" aria-hidden="true"></span>
+    COURSEWORK / 2026<br>
+    ONLINE STATISTICS
+  </div>
+
+</header>
+
+
+<main class="wrap welfordPage">
+
+  <div class="documentHeader">
+    <span>HOMEWORK 4.0 / WELFORD'S RECURRENCE</span>
+    <span>MSc CYBERSECURITY · STATISTICS</span>
+  </div>
+
+
+  <!-- INTRODUCTION -->
+
+  <section class="walletIntro" aria-labelledby="pageTitle">
+
+    <p class="overline">
+      Online algorithms · Sampling mean · Sampling variance
+    </p>
+
+    <h1 id="pageTitle">
+      Estimating the mean and variance
+      <em>one score at a time</em><span class="period">.</span>
+    </h1>
+
+    <p class="lead">
+      This exercise derives Welford's recurrence formulas and applies
+      them to simulated penetration scores. Each of m hackers receives
+      n scores between 0 and 10. The online algorithm calculates each
+      hacker's sample mean and sample variance without storing the
+      full sequence.
+    </p>
+
+
+  </section>
+
+
+  <!-- EXERCISE 1 -->
+
+  <section class="section" id="recurrence" aria-labelledby="recurrenceTitle">
+
+    <div class="sectionhead">
+      <div>
+        <span class="tag">01 / Exercise 1</span>
+        <h2 id="recurrenceTitle">Welford's recurrence formulas</h2>
+        <p class="sub">
+          The update uses the previous mean and the new observation.
+          It updates the sum of squared deviations without recalculating
+          all earlier deviations.
+        </p>
+      </div>
+    </div>
+
+    <div class="grid two">
+
+      <article class="card">
+
+        <h3>Step 1 — update the mean</h3>
+
+        <p>
+          Suppose we have already observed x₁, …, xₙ₋₁ and know
+          their mean x̄ₙ₋₁. When the new observation xₙ arrives,
+          define its difference from the old mean:
+        </p>
+
+        <div class="mathBlock">
+          <div class="mathline">
+            δₙ = xₙ − x̄ₙ₋₁
+          </div>
+        </div>
+
+        <p>
+          The new mean is the old mean plus one n-th of that difference:
+        </p>
+
+        <div class="mathBlock">
+          <div class="mathline">
+            x̄ₙ = x̄ₙ₋₁ + δₙ / n
+          </div>
+        </div>
+
+        <p class="small">
+          This is Knuth's online mean recurrence. It requires only
+          the previous mean, the new value and the observation count.
+        </p>
+
+      </article>
+
+
+      <article class="card">
+
+        <h3>Step 2 — update the sum of squares</h3>
+
+        <p>
+          Let M₂,ₙ₋₁ be the sum of squared deviations from the
+          previous mean. Define the difference from the updated mean:
+        </p>
+
+        <div class="mathBlock">
+          <div class="mathline">
+            δ₂ = xₙ − x̄ₙ
+          </div>
+        </div>
+
+        <p>
+          Then the new sum of squared deviations is:
+        </p>
+
+        <div class="mathBlock">
+          <div class="mathline">
+            M₂,ₙ = M₂,ₙ₋₁ + δₙδ₂
+          </div>
+        </div>
+
+        <p>
+          Equivalently, M₂,ₙ = M₂,ₙ₋₁ +
+          (xₙ − x̄ₙ₋₁)(xₙ − x̄ₙ).
+          The sample variance is M₂,ₙ/(n−1).
+        </p>
+
+      </article>
+
+    </div>
+
+
+    <div class="card" style="margin-top:18px">
+
+      <h3>Why the sum-of-squares update works</h3>
+
+      <p>
+        Write each old observation as its deviation from the old mean
+        plus the old mean. Since the old deviations sum to zero,
+        the cross terms cancel when the mean is shifted to x̄ₙ.
+        The remaining correction is:
+      </p>
+
+      <div class="mathBlock">
+        <div class="mathline">
+          M₂,ₙ − M₂,ₙ₋₁ =
+          (n−1)(x̄ₙ − x̄ₙ₋₁)² + (xₙ − x̄ₙ)²
+        </div>
+      </div>
+
+      <p>
+        Because x̄ₙ − x̄ₙ₋₁ = δₙ/n and
+        xₙ − x̄ₙ = δₙ(n−1)/n, the correction simplifies
+        to δₙδ₂. This gives Welford's recurrence.
+      </p>
+
+      <div class="callout">
+        <strong>Notation.</strong>
+        M₂ is the running sum of squared deviations, not the variance
+        itself. For n ≥ 2, the unbiased sample variance is
+        s² = M₂/(n−1). If the goal is the empirical population
+        variance of the observed n values, use M₂/n instead.
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <!-- IMPLEMENTATION -->
+
+  <section class="section" id="code" aria-labelledby="codeTitle">
+
+    <div class="sectionhead">
+      <div>
+        <span class="tag">02 / Implementation</span>
+        <h2 id="codeTitle">The three-line update</h2>
+        <p class="sub">
+          Only three update statements are needed inside the loop.
+          The final division converts the accumulated sum of squares
+          into the sample variance.
+        </p>
+      </div>
+    </div>
+
+    <div class="card">
+
+      <pre class="codeBlock"><code>let count = 0;
+let mean = 0;
+let M2 = 0;
+
+for (const x of observations) {
+  const delta = x - mean;
+  mean += delta / ++count;
+  M2 += delta * (x - mean);
+}
+
+const sampleVariance = M2 / (count - 1);</code></pre>
+
+      <p class="small" style="margin:15px 0 0">
+        The key three lines are the calculation of delta, the mean
+        update, and the M₂ update. The algorithm processes each
+        observation once, uses constant memory, and avoids the less
+        stable calculation E[X²] − E[X]² when the two terms are large
+        and close together.
+      </p>
+
+    </div>
+
+  </section>
+
+
+  <!-- EXERCISE 2: DISTRIBUTION -->
+
+  <section class="section" id="distribution" aria-labelledby="distributionTitle">
+
+    <div class="sectionhead">
+      <div>
+        <span class="tag">03 / Exercise 2</span>
+        <h2 id="distributionTitle">Choose a score distribution</h2>
+        <p class="sub">
+          Each score is an independent draw from the same fixed
+          distribution, for every hacker and every system.
+        </p>
+      </div>
+    </div>
+
+    <div class="grid two">
+
+      <article class="card">
+
+        <h3>Discrete uniform scores</h3>
+
+        <p>
+          I choose the discrete uniform distribution on the integers
+          from 0 to 10. Every possible score is equally likely:
+        </p>
+
+        <div class="mathBlock">
+          <div class="mathline">
+            P(X = k) = 1/11, &nbsp; k ∈ {0, 1, …, 10}
+          </div>
+        </div>
+
+        <div class="distributionValues">
+          Possible scores: 0 · 1 · 2 · 3 · 4 · 5 · 6 · 7 · 8 · 9 · 10
+          <br>
+          Probability of each score: 1/11 ≈ 0.0909
+        </div>
+
+        <p class="small" style="margin-top:14px">
+          The same distribution is used for all m hackers and all n
+          systems. The draws are independent in this simplified model.
+        </p>
+
+      </article>
+
+
+      <article class="card">
+
+        <h3>Theoretical moments</h3>
+
+        <div class="metrics" style="grid-template-columns:repeat(2,minmax(0,1fr));margin-top:10px">
+
+          <div class="metric">
+            <span class="lbl">Theoretical mean μ</span>
+            <strong class="n">5</strong>
+            <small>Average score</small>
+          </div>
+
+          <div class="metric">
+            <span class="lbl">Theoretical variance σ²</span>
+            <strong class="n">10</strong>
+            <small>Squared-score units</small>
+          </div>
+
+        </div>
+
+        <p class="mathline">
+          μ = (0 + 1 + … + 10) / 11 = 5
+        </p>
+
+        <p class="mathline">
+          σ² = (1/11) Σₖ₌₀¹⁰ (k − 5)² = 10
+        </p>
+
+        <p class="formulaNote">
+          For the exact theoretical spread of the sample-variance
+          estimator, the fourth central moment is
+          μ₄ = E[(X−5)⁴] = 178.
+        </p>
+
+      </article>
+
+    </div>
+
+  </section>
+
+
+  <!-- SIMULATION -->
+
+  <section class="section" id="simulation" aria-labelledby="simulationTitle">
+
+    <div class="sectionhead">
+
+      <div>
+        <span class="tag">04 / Monte Carlo experiment</span>
+        <h2 id="simulationTitle">Simulate m hackers and n systems</h2>
+        <p class="sub">
+          For each hacker, Welford's algorithm calculates one sample
+          mean and one unbiased sample variance from that hacker's
+          n scores.
+        </p>
+      </div>
+
+      <span class="pill">Interactive simulation</span>
+
+    </div>
+
+
+    <div class="card">
+
+      <div class="controlGrid">
+
+        <div class="field">
+          <label for="nInput">
+            Systems attempted by each hacker (n)
+          </label>
+
+          <input
+            id="nInput"
+            type="number"
+            min="2"
+            max="1000"
+            step="1"
+            value="50"
+          >
+
+          <p class="inputHint">
+            At least 2 observations are required for sample variance.
+          </p>
+        </div>
+
+
+        <div class="field">
+          <label for="mInput">
+            Number of independent hackers (m)
+          </label>
+
+          <input
+            id="mInput"
+            type="number"
+            min="10"
+            max="2000"
+            step="10"
+            value="1000"
+          >
+
+          <p class="inputHint">
+            Each hacker generates a separate trajectory.
+          </p>
+        </div>
+
+      </div>
+
+
+      <div class="buttons">
+
+        <button class="btn primary" id="runButton" type="button">
+          Run simulation
+        </button>
+
+        <button class="btn" id="compareButton" type="button">
+          Compare increasing n
+        </button>
+
+      </div>
+
+      <p class="status" id="status" role="status" aria-live="polite">
+        Ready. Run the simulation to estimate the mean and variance
+        across hackers.
+      </p>
+
+    </div>
+
+
+    <!-- SUMMARY METRICS -->
+
+    <div class="metrics" aria-label="Simulation results">
+
+      <div class="metric">
+        <span class="lbl">Average sample mean</span>
+        <strong class="n" id="avgMean">—</strong>
+        <small id="avgMeanNote">Theoretical target: 5</small>
+      </div>
+
+      <div class="metric">
+        <span class="lbl">Average sample variance</span>
+        <strong class="n" id="avgVariance">—</strong>
+        <small id="avgVarianceNote">Theoretical target: 10</small>
+      </div>
+
+      <div class="metric">
+        <span class="lbl">SD of sample means</span>
+        <strong class="n" id="sdMeans">—</strong>
+        <small id="sdMeansNote">Theory: √(10/n)</small>
+      </div>
+
+      <div class="metric">
+        <span class="lbl">SD of sample variances</span>
+        <strong class="n" id="sdVariances">—</strong>
+        <small id="sdVariancesNote">Theory uses μ₄ = 178</small>
+      </div>
+
+    </div>
+
+
+    <!-- HISTOGRAMS -->
+
+    <div class="grid two">
+
+      <article class="card">
+
+        <h3>Sampling means across hackers</h3>
+
+        <p class="small">
+          Each value is one hacker's sample mean. The dashed line
+          marks the theoretical population mean μ = 5.
+        </p>
+
+        <div class="chartWrap">
+          <canvas
+            class="chart"
+            id="meanChart"
+            width="900"
+            height="310"
+            aria-label="Histogram of sample means"
+          ></canvas>
+        </div>
+
+        <p class="chartNote" id="meanChartNote">
+          Run the simulation to draw the histogram.
+        </p>
+
+      </article>
+
+
+      <article class="card">
+
+        <h3>Sampling variances across hackers</h3>
+
+        <p class="small">
+          Each value is one hacker's unbiased sample variance.
+          The dashed line marks the theoretical variance σ² = 10.
+        </p>
+
+        <div class="chartWrap">
+          <canvas
+            class="chart"
+            id="varianceChart"
+            width="900"
+            height="310"
+            aria-label="Histogram of sample variances"
+          ></canvas>
+        </div>
+
+        <p class="chartNote" id="varianceChartNote">
+          Run the simulation to draw the histogram.
+        </p>
+
+      </article>
+
+    </div>
+
+
+    <!-- WELFORD EXAMPLE -->
+
+    <div class="card" style="margin-top:18px">
+
+      <h3>Welford's updates for the first hacker</h3>
+
+      <p class="small">
+        The table shows the first 12 scores generated for the first
+        hacker and the running values after each update. The sample
+        variance is undefined at the first observation.
+      </p>
+
+      <div class="tableWrap">
+
+        <table>
+
+          <thead>
+            <tr>
+              <th>Step</th>
+              <th>Score x</th>
+              <th>δ = x − old mean</th>
+              <th>Updated mean</th>
+              <th>Updated M₂</th>
+              <th>Sample variance</th>
+            </tr>
+          </thead>
+
+          <tbody id="welfordRows">
+            <tr>
+              <td colspan="6">
+                Run the simulation to generate the example.
+              </td>
+            </tr>
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </div>
+
+
+    <!-- COMPARISON FOR INCREASING N -->
+
+    <div class="card" style="margin-top:18px">
+
+      <h3>Comparison for increasing n</h3>
+
+      <p class="small">
+        For each n, the experiment is repeated for the same number
+        of independent hackers m. The table compares the empirical
+        averages with μ = 5 and σ² = 10, and compares the observed
+        spread with its theoretical value.
+      </p>
+
+      <div class="tableWrap">
+
+        <table>
+
+          <thead>
+            <tr>
+              <th>Systems n</th>
+              <th>Average sample mean</th>
+              <th>Average sample variance</th>
+              <th>SD of means<br>(observed / theory)</th>
+              <th>SD of variances<br>(observed / theory)</th>
+            </tr>
+          </thead>
+
+          <tbody id="comparisonRows">
+            <tr>
+              <td colspan="5">
+                Select “Compare increasing n” to run the comparison.
+              </td>
+            </tr>
+          </tbody>
+
+        </table>
+
+      </div>
+
+      <p class="formulaNote" id="comparisonNote">
+        Comparison uses n = 2, 5, 10, 20, 50, 100, 250 and 500.
+      </p>
+
+    </div>
+
+  </section>
+
+
+  <!-- INTERPRETATION -->
+
+  <section class="section" id="inference" aria-labelledby="inferenceTitle">
+
+    <div class="sectionhead">
+
+      <div>
+        <span class="tag">05 / Interpretation</span>
+        <h2 id="inferenceTitle">What changes as n increases?</h2>
+        <p class="sub">
+          The sample mean and sample variance are estimators:
+          they vary from hacker to hacker, even though every hacker
+          samples from the same population.
+        </p>
+      </div>
+
+    </div>
+
+
+    <div class="grid two">
+
+      <article class="card">
+
+        <h3>Sampling mean</h3>
+
+        <p>
+          For one hacker, the sample mean has expectation μ = 5
+          and variance σ²/n = 10/n. Its standard deviation is
+          therefore √(10/n). Increasing n makes the individual
+          sample means cluster more closely around 5.
+        </p>
+
+        <div class="mathBlock">
+          <div class="mathline">
+            E[X̄ₙ] = 5, &nbsp; Var(X̄ₙ) = 10/n
+          </div>
+        </div>
+
+        <p>
+          Across m independent hackers, the average of their sample
+          means still has expectation 5, while its standard error is
+          √(10/(mn)).
+        </p>
+
+      </article>
+
+
+      <article class="card">
+
+        <h3>Sampling variance</h3>
+
+        <p>
+          For n ≥ 2, the usual sample variance with denominator n−1
+          is unbiased, so its expectation is the population variance
+          10. Its spread also decreases as n grows.
+        </p>
+
+        <div class="mathBlock">
+          <div class="mathline">
+            E[S²ₙ] = 10
+          </div>
+
+          <div class="mathline">
+            Var(S²ₙ) =
+            [178 − 100(n−3)/(n−1)] / n
+          </div>
+        </div>
+
+        <p>
+          The second expression uses the fourth central moment
+          μ₄ = 178 for the chosen discrete uniform distribution.
+          For large n, this variance is approximately 78/n.
+        </p>
+
+      </article>
+
+    </div>
+
+
+    <div class="card" style="margin-top:18px">
+
+      <h3>Why this is useful in inferential statistics</h3>
+
+      <ul class="bullets">
+
+        <li>
+          <strong>Estimating unknown parameters:</strong>
+          a sample mean estimates a population mean, while the
+          unbiased sample variance estimates population variability.
+        </li>
+
+        <li>
+          <strong>Quantifying uncertainty:</strong>
+          the spread of estimates shows how much results may change
+          from one sample to another. Larger n generally produces
+          more precise estimates.
+        </li>
+
+        <li>
+          <strong>Separating n from m:</strong>
+          increasing n reduces the variability of each hacker's
+          estimators. Increasing m makes the averages across hackers
+          more stable because more independent estimates are being
+          averaged.
+        </li>
+
+        <li>
+          <strong>Online computation:</strong>
+          Welford's method updates the estimates as new scores arrive,
+          uses constant memory, and is numerically stable. This is
+          useful for streaming measurements and large datasets.
+        </li>
+
+      </ul>
+
+
+      <div class="callout">
+
+        <strong>Conclusion.</strong>
+        The average of the m sample means should be close to 5,
+        and the average of the m sample variances should be close
+        to 10. These are the theoretical population values.
+
+        As n increases, both types of individual estimates become
+        less variable across hackers. A larger m also improves the
+        precision of the averages reported by the simulation.
+
+        Real penetration attempts may not be independent or
+        identically distributed; the uniform score model is a
+        controlled probability experiment rather than a complete
+        model of a real attack.
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <footer class="footer">
+    <span>STATISTICS · MSc CYBERSECURITY</span>
+    <span>HOMEWORK 4.0 / WELFORD'S RECURRENCE</span>
+  </footer>
+
+</main>
+
+
+<!-- JAVASCRIPT -->
+
+<script>
+(function () {
+
+  'use strict';
+
+  const $ = id => document.getElementById(id);
+
+  const TARGET_MEAN = 5;
+  const TARGET_VARIANCE = 10;
+  const FOURTH_CENTRAL_MOMENT = 178;
+
+  const N_VALUES = [2, 5, 10, 20, 50, 100, 250, 500];
+
+
+  function format(value, digits = 4) {
+    if (!Number.isFinite(value)) return '—';
+    return Number(value.toFixed(digits)).toString();
+  }
+
+
+  function readSettings() {
+
+    const n = Number($('nInput').value);
+    const m = Number($('mInput').value);
+
+    if (!Number.isInteger(n) || n < 2 || n > 1000) {
+      throw new Error('n must be an integer from 2 to 1,000.');
+    }
+
+    if (!Number.isInteger(m) || m < 10 || m > 2000) {
+      throw new Error('m must be an integer from 10 to 2,000.');
+    }
+
+    return { n, m };
+  }
+
+
+  function randomScore() {
+    return Math.floor(Math.random() * 11);
+  }
+
+
+  // Welford's three-line update is applied independently to each hacker.
+
+  function simulate(n, m, keepExample) {
+
+    const means = new Array(m);
+    const variances = new Array(m);
+
+    let exampleRows = [];
+
+
+    for (let hacker = 0; hacker < m; hacker++) {
+
+      let count = 0;
+      let mean = 0;
+      let M2 = 0;
+
+
+      for (let system = 0; system < n; system++) {
+
+        const x = randomScore();
+
+        const oldMean = mean;
+        const delta = x - mean;
+
+        mean += delta / ++count;
+
+        M2 += delta * (x - mean);
+
+
+        if (keepExample && hacker === 0 && system < 12) {
+
+          exampleRows.push({
+            step: count,
+            score: x,
+            delta,
+            mean,
+            M2,
+            variance: count > 1 ? M2 / (count - 1) : null
+          });
+
+        }
+
+      }
+
+
+      means[hacker] = mean;
+      variances[hacker] = M2 / (count - 1);
+
+    }
+
+
+    return {
+      means,
+      variances,
+      exampleRows
+    };
+
+  }
+
+
+  // Welford is also used to summarize the variation between hackers.
+
+  function summarize(values) {
+
+    let count = 0;
+    let mean = 0;
+    let M2 = 0;
+
+
+    for (const x of values) {
+
+      const delta = x - mean;
+
+      mean += delta / ++count;
+
+      M2 += delta * (x - mean);
+
+    }
+
+
+    const variance = count > 1 ? M2 / (count - 1) : 0;
+
+    return {
+      mean,
+      variance,
+      sd: Math.sqrt(variance)
+    };
+
+  }
+
+
+  function theoreticalVarianceOfSampleVariance(n) {
+
+    return (
+      FOURTH_CENTRAL_MOMENT -
+      ((n - 3) / (n - 1)) * TARGET_VARIANCE ** 2
+    ) / n;
+
+  }
+
+
+  // Draw a histogram on a canvas.
+
+  function drawHistogram(canvasId, values, target, xLabel) {
+
+    const canvas = $(canvasId);
+    const ctx = canvas.getContext('2d');
+
+    const width = canvas.width;
+    const height = canvas.height;
+
+    ctx.clearRect(0, 0, width, height);
+
+    ctx.fillStyle = '#fffefa';
+    ctx.fillRect(0, 0, width, height);
+
+
+    let min = Math.min(target, ...values);
+    let max = Math.max(target, ...values);
+
+    if (max === min) {
+      min -= 1;
+      max += 1;
+    }
+
+    const padding = (max - min) * 0.08;
+
+    min = Math.max(0, min - padding);
+    max += padding;
+
+
+    const bins = 32;
+    const binWidth = (max - min) / bins;
+
+    const counts = new Array(bins).fill(0);
+
+
+    values.forEach(value => {
+
+      let index = Math.floor((value - min) / binWidth);
+
+      index = Math.max(0, Math.min(bins - 1, index));
+
+      counts[index]++;
+
+    });
+
+
+    const maxCount = Math.max(1, ...counts);
+
+    const left = 64;
+    const right = 24;
+    const top = 20;
+    const bottom = 48;
+
+    const plotWidth = width - left - right;
+    const plotHeight = height - top - bottom;
+
+
+    ctx.font = '12px Arial';
+    ctx.strokeStyle = '#e5e5dc';
+    ctx.fillStyle = '#65716a';
+    ctx.lineWidth = 1;
+
+
+    for (let i = 0; i <= 4; i++) {
+
+      const y = top + plotHeight * i / 4;
+
+      ctx.beginPath();
+      ctx.moveTo(left, y);
+      ctx.lineTo(width - right, y);
+      ctx.stroke();
+
+      const value = maxCount * (4 - i) / 4;
+
+      ctx.fillText(String(Math.round(value)), 17, y + 4);
+
+    }
+
+
+    counts.forEach((count, index) => {
+
+      const barWidth = plotWidth / bins;
+      const barHeight = plotHeight * count / maxCount;
+
+      const x = left + index * barWidth + 1;
+      const y = top + plotHeight - barHeight;
+
+      ctx.fillStyle = '#c5d4ca';
+
+      ctx.fillRect(
+        x,
+        y,
+        Math.max(1, barWidth - 2),
+        barHeight
+      );
+
+    });
+
+
+    // Theoretical target line.
+
+    const targetX =
+      left + plotWidth * (target - min) / (max - min);
+
+    ctx.save();
+
+    ctx.strokeStyle = '#b94830';
+    ctx.lineWidth = 3;
+    ctx.setLineDash([8, 6]);
+
+    ctx.beginPath();
+    ctx.moveTo(targetX, top);
+    ctx.lineTo(targetX, top + plotHeight);
+    ctx.stroke();
+
+    ctx.restore();
+
+
+    // Chart axes.
+
+    ctx.strokeStyle = '#8d9992';
+
+    ctx.beginPath();
+    ctx.moveTo(left, top);
+    ctx.lineTo(left, top + plotHeight);
+    ctx.lineTo(width - right, top + plotHeight);
+    ctx.stroke();
+
+
+    ctx.fillStyle = '#53605c';
+    ctx.textAlign = 'center';
+
+    ctx.fillText(
+      xLabel,
+      left + plotWidth / 2,
+      height - 10
+    );
+
+    ctx.fillText(
+      'Target: ' + target,
+      Math.min(width - 95, Math.max(left + 45, targetX)),
+      14
+    );
+
+    ctx.textAlign = 'left';
+
+    ctx.fillText('Hackers', 12, 15);
+
+  }
+
+
+  // Display the running values for the first hacker.
+
+  function renderExample(rows) {
+
+    $('welfordRows').innerHTML = rows.map(row => `
+
+      <tr>
+        <td class="numberCell">${row.step}</td>
+
+        <td class="numberCell">${row.score}</td>
+
+        <td class="numberCell">${format(row.delta)}</td>
+
+        <td class="numberCell">${format(row.mean)}</td>
+
+        <td class="numberCell">${format(row.M2)}</td>
+
+        <td class="numberCell">
+          ${row.variance === null ? '—' : format(row.variance)}
+        </td>
+      </tr>
+
+    `).join('');
+
+  }
+
+
+  // Display the main simulation results.
+
+  function renderResults(result, n, m) {
+
+    const meanStats = summarize(result.means);
+    const varianceStats = summarize(result.variances);
+
+    const theoreticalMeanSD = Math.sqrt(TARGET_VARIANCE / n);
+
+    const theoreticalVarianceSD =
+      Math.sqrt(theoreticalVarianceOfSampleVariance(n));
+
+    const meanSE = Math.sqrt(TARGET_VARIANCE / (n * m));
+
+    const varianceSE = theoreticalVarianceSD / Math.sqrt(m);
+
+
+    $('avgMean').textContent = format(meanStats.mean);
+
+    $('avgVariance').textContent = format(varianceStats.mean);
+
+    $('sdMeans').textContent = format(meanStats.sd);
+
+    $('sdVariances').textContent = format(varianceStats.sd);
+
+
+    $('avgMeanNote').textContent =
+      'Target 5 · error ' + format(meanStats.mean - TARGET_MEAN);
+
+    $('avgVarianceNote').textContent =
+      'Target 10 · error ' + format(varianceStats.mean - TARGET_VARIANCE);
+
+
+    $('sdMeansNote').textContent =
+      'Theory ' + format(theoreticalMeanSD) +
+      ' · SE of average ' + format(meanSE);
+
+    $('sdVariancesNote').textContent =
+      'Theory ' + format(theoreticalVarianceSD) +
+      ' · SE of average ' + format(varianceSE);
+
+
+    drawHistogram(
+      'meanChart',
+      result.means,
+      TARGET_MEAN,
+      'Sample mean'
+    );
+
+    drawHistogram(
+      'varianceChart',
+      result.variances,
+      TARGET_VARIANCE,
+      'Sample variance'
+    );
+
+
+    $('meanChartNote').textContent =
+      `${m.toLocaleString()} hackers · n = ${n} scores per hacker · dashed line = μ = 5.`;
+
+    $('varianceChartNote').textContent =
+      `${m.toLocaleString()} hackers · n = ${n} scores per hacker · dashed line = σ² = 10.`;
+
+
+    renderExample(result.exampleRows);
+
+  }
+
+
+  // Run the main experiment.
+
+  function runMainSimulation() {
+
+    try {
+
+      const { n, m } = readSettings();
+
+      $('status').textContent = 'Simulation running…';
+
+      const result = simulate(n, m, true);
+
+      renderResults(result, n, m);
+
+      $('status').textContent =
+        `Completed: ${m.toLocaleString()} independent hackers, each with ${n} scores. Each hacker's mean and sample variance were updated using Welford's recurrence.`;
+
+    } catch (error) {
+
+      $('status').textContent = error.message;
+
+    }
+
+  }
+
+
+  // Repeat the experiment for increasing values of n.
+
+  function runComparison() {
+
+    try {
+
+      const { m } = readSettings();
+
+      $('status').textContent =
+        'Running the increasing-n comparison…';
+
+      const rows = [];
+
+
+      for (const n of N_VALUES) {
+
+        const result = simulate(n, m, false);
+
+        const meanStats = summarize(result.means);
+
+        const varianceStats = summarize(result.variances);
+
+
+        const theoreticalMeanSD =
+          Math.sqrt(TARGET_VARIANCE / n);
+
+        const theoreticalVarianceSD =
+          Math.sqrt(theoreticalVarianceOfSampleVariance(n));
+
+
+        rows.push({
+
+          n,
+
+          mean: meanStats.mean,
+
+          variance: varianceStats.mean,
+
+          meanSD: meanStats.sd,
+
+          theoreticalMeanSD,
+
+          varianceSD: varianceStats.sd,
+
+          theoreticalVarianceSD
+
+        });
+
+      }
+
+
+      $('comparisonRows').innerHTML = rows.map(row => `
+
+        <tr>
+
+          <td class="numberCell">${row.n}</td>
+
+          <td class="numberCell">${format(row.mean)}</td>
+
+          <td class="numberCell">${format(row.variance)}</td>
+
+          <td class="numberCell">
+            ${format(row.meanSD)} / ${format(row.theoreticalMeanSD)}
+          </td>
+
+          <td class="numberCell">
+            ${format(row.varianceSD)} / ${format(row.theoreticalVarianceSD)}
+          </td>
+
+        </tr>
+
+      `).join('');
+
+
+      $('comparisonNote').textContent =
+        `Each row uses ${m.toLocaleString()} independently simulated hackers. The theoretical targets for the averages are 5 and 10.`;
+
+
+      $('status').textContent =
+        `Comparison completed for ${N_VALUES.length} values of n, using ${m.toLocaleString()} hackers per value.`;
+
+    } catch (error) {
+
+      $('status').textContent = error.message;
+
+    }
+
+  }
+
+
+  // Button events.
+
+  $('runButton').addEventListener(
+    'click',
+    runMainSimulation
+  );
+
+  $('compareButton').addEventListener(
+    'click',
+    runComparison
+  );
+
+
+  // Run an initial simulation when the page opens.
+
+  runMainSimulation();
+
+})();
+</script>
+
+</body>
+</html>
